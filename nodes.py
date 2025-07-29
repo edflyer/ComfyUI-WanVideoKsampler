@@ -234,12 +234,132 @@ class WanVideoKsampler:
                 self.logger.error("Out of memory error. Consider reducing frame count or model complexity.")
             raise e
 
+class WanVideoKsamplerAdvanced:
+    """
+    Video K-sampler Advanced node with memory management for processing video latents.
+    """
+    
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {"required":
+                    {"model": ("MODEL",),
+                    "add_noise": (["enable", "disable"], ),
+                    "noise_seed": ("INT", {"default": 0, "min": 0, "max": 0xffffffffffffffff, "control_after_generate": True}),
+                    "steps": ("INT", {"default": 20, "min": 1, "max": 10000}),
+                    "cfg": ("FLOAT", {"default": 8.0, "min": 0.0, "max": 100.0, "step":0.1, "round": 0.01}),
+                    "sampler_name": (comfy.samplers.KSampler.SAMPLERS, ),
+                    "scheduler": (comfy.samplers.KSampler.SCHEDULERS, ),
+                    "positive": ("CONDITIONING", ),
+                    "negative": ("CONDITIONING", ),
+                    "video_latents": ("LATENT",),
+                    "start_at_step": ("INT", {"default": 0, "min": 0, "max": 10000}),
+                    "end_at_step": ("INT", {"default": 10000, "min": 0, "max": 10000}),
+                    "return_with_leftover_noise": (["disable", "enable"], ),
+                     }
+                }
+    
+    RETURN_TYPES = ("LATENT",)
+    FUNCTION = "sample"
+    CATEGORY = "sampling"
+    
+    def __init__(self):
+        self.logger = logging.getLogger("WanVideoKsamplerAdvanced")
+        if not self.logger.handlers:
+            handler = logging.StreamHandler()
+            formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+            handler.setFormatter(formatter)
+            self.logger.addHandler(handler)
+            self.logger.setLevel(logging.INFO)
+        
+        # Initialize memory manager
+        self.memory_manager = None
+
+    def sample(self, model, add_noise, noise_seed, steps, cfg, sampler_name, scheduler, positive, negative, video_latents: Dict[str, torch.Tensor], start_at_step, end_at_step, return_with_leftover_noise, denoise=1.0) -> Dict[str, torch.Tensor]:
+        """
+        Sample video frames with memory management.
+        
+        Args:
+            model: Diffusion model
+            video_latents: Dictionary containing latent tensors
+            positive: Positive conditioning
+            negative: Negative conditioning
+            seed: Random seed
+            steps: Number of sampling steps
+            cfg: Classifier-free guidance scale
+            sampler_name: Name of sampler to use
+            scheduler: Name of scheduler to use
+            denoise: Denoising strength
+            
+        Returns:
+            Dictionary containing processed latent tensors
+        """
+        force_full_denoise = True
+        if return_with_leftover_noise == "enable":
+            force_full_denoise = False
+        disable_noise = False
+        if add_noise == "disable":
+            disable_noise = True
+        
+        start_time = time.time()
+        device = comfy.model_management.get_torch_device()
+        
+        # Initialize memory manager if needed
+        if self.memory_manager is None:
+            self.memory_manager = MemoryManager(device)
+        
+        # Log latent size for debugging
+        if isinstance(video_latents, dict) and 'samples' in video_latents:
+            latent_samples = video_latents['samples']
+            total_frames = latent_samples.shape[0]
+            self.logger.info(f"Processing latent shape: {latent_samples.shape}, total frames: {total_frames}")
+        else:
+            self.logger.error("Invalid latent format")
+            raise ValueError("Expected latent dictionary with 'samples' key")
+        
+        self.logger.info(f"Processing with {steps} steps, {cfg} CFG, {sampler_name} sampler")
+        
+        try:
+            # Process with memory tracking
+            with self.memory_manager.track_memory("Video processing"):
+                # Check memory usage before processing
+                memory_stats = self.memory_manager.get_memory_stats()
+                if "usage_percent" in memory_stats:
+                    self.logger.info(f"Memory usage before processing: {memory_stats['usage_percent']:.1f}%")
+                
+                # Apply sampling
+                return common_ksampler(model, noise_seed, steps, cfg, sampler_name, scheduler, positive, negative, video_latents, denoise=denoise, disable_noise=disable_noise, start_step=start_at_step, last_step=end_at_step, force_full_denoise=force_full_denoise)
+                
+                # Clear memory after processing
+                self.memory_manager.cleanup()
+                
+                # Check memory usage after processing
+                memory_stats = self.memory_manager.get_memory_stats()
+                if "usage_percent" in memory_stats:
+                    self.logger.info(f"Memory usage after processing: {memory_stats['usage_percent']:.1f}%")
+                
+                end_time = time.time()
+                self.logger.info(f"Complete: {total_frames} frames in {end_time - start_time:.2f}s ({(end_time - start_time) / total_frames:.2f}s per frame)")
+                
+                return result
+                
+        except Exception as e:
+            self.logger.error(f"Error during processing: {str(e)}")
+            # Try to release memory
+            self.memory_manager.cleanup(force=True)
+            # Check if it's an out-of-memory error
+            if "CUDA out of memory" in str(e):
+                self.logger.error("Out of memory error. Consider reducing frame count or model complexity.")
+            raise e
+
+
 
 # Node registration
 NODE_CLASS_MAPPINGS = {
     "WanVideoKsampler": WanVideoKsampler,
+    "WanVideoKsampler (Advanced"): WanVideoKsamplerAdvanced
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
     "WanVideoKsampler": "Wan Video Ksampler",
+    "WanVideoKsampler (Advanced)": "Wan Video Ksampler (Advanced)"
 }
