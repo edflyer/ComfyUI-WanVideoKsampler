@@ -148,6 +148,9 @@ For more complex examples and full workflows, check the [examples directory](exa
 - CUDA-capable GPU (min 8GB VRAM for optimal performance)
 - psutil library
 
+## Edflyer work
+  WAN 2.2 came out and uses funuctions from the advanced KSampler. Going to take a crack at understanding Ksampler, This code, and advanced Ksampler to see if I can integrate the features. Not even sure it's necessary or that I won't get beat to it. 
+
 ## License
 
 [MIT License](LICENSE)
