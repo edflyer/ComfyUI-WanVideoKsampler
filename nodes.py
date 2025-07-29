@@ -328,7 +328,7 @@ class WanVideoKsamplerAdvanced:
                 
                 # Apply sampling
                     self.logger.info(f"MADE IT HERE")
-                return common_ksampler(model, noise_seed, steps, cfg, sampler_name, scheduler, positive, negative, video_latents, denoise=denoise, disable_noise=disable_noise, start_step=start_at_step, last_step=end_at_step, force_full_denoise=force_full_denoise)
+                result = nodes.common_ksampler(model, noise_seed, steps, cfg, sampler_name, scheduler, positive, negative, video_latents, denoise=denoise, disable_noise=disable_noise, start_step=start_at_step, last_step=end_at_step, force_full_denoise=force_full_denoise)
                 
                 # Clear memory after processing
                 self.memory_manager.cleanup()
