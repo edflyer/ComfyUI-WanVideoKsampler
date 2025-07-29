@@ -274,7 +274,21 @@ class WanVideoKsamplerAdvanced:
         # Initialize memory manager
         self.memory_manager = None
 
-    def sample(self, model, add_noise, noise_seed, steps, cfg, sampler_name, scheduler, positive, negative, video_latents: Dict[str, torch.Tensor], start_at_step, end_at_step, return_with_leftover_noise, denoise=1.0) -> Dict[str, torch.Tensor]:
+    def sample(self,
+               model,
+               add_noise,
+               noise_seed,
+               steps,
+               cfg,
+               sampler_name,
+               scheduler,
+               positive,
+               negative,
+               video_latents: Dict[str, torch.Tensor],
+               start_at_step,
+               end_at_step,
+               return_with_leftover_noise,
+               denoise=1.0) -> Dict[str, torch.Tensor]:
         """
         Sample video frames with memory management.
         
@@ -293,13 +307,7 @@ class WanVideoKsamplerAdvanced:
         Returns:
             Dictionary containing processed latent tensors
         """
-        force_full_denoise = True
-        if return_with_leftover_noise == "enable":
-            force_full_denoise = False
-        disable_noise = False
-        if add_noise == "disable":
-            disable_noise = True
-        
+               
         start_time = time.time()
         device = comfy.model_management.get_torch_device()
         
@@ -328,6 +336,12 @@ class WanVideoKsamplerAdvanced:
                 
                 # Apply sampling
                     self.logger.info(f"MADE IT HERE")
+                    force_full_denoise = True
+                    if return_with_leftover_noise == "enable":
+                    force_full_denoise = False
+                    disable_noise = False
+                    if add_noise == "disable":
+                    disable_noise = True
                 result = nodes.common_ksampler(model, noise_seed, steps, cfg, sampler_name, scheduler, positive, negative, video_latents, denoise=denoise, disable_noise=disable_noise, start_step=start_at_step, last_step=end_at_step, force_full_denoise=force_full_denoise)
                 
                 # Clear memory after processing
