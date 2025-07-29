@@ -356,10 +356,10 @@ class WanVideoKsamplerAdvanced:
 # Node registration
 NODE_CLASS_MAPPINGS = {
     "WanVideoKsampler": WanVideoKsampler,
-    "WanVideoKsampler (Advanced"): WanVideoKsamplerAdvanced
+    "WanVideoKsampler (Advanced"): WanVideoKsamplerAdvanced,
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
     "WanVideoKsampler": "Wan Video Ksampler",
-    "WanVideoKsampler (Advanced)": "Wan Video Ksampler (Advanced)"
+    "WanVideoKsampler (Advanced)": "Wan Video Ksampler (Advanced)",
 }
